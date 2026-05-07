@@ -1,293 +1,174 @@
 "use client";
 
 import Link from "next/link";
+import React from "react";
 
+// --- Types ---
+type StatusType = "good" | "service_due" | "confirmed" | "pending" | "delivered" | "processing";
+
+interface DataItem {
+  id: number | string;
+  status: StatusType;
+}
+
+// --- Constants & Config ---
+const STATUS_CONFIG: Record<StatusType, { label: string; color: string }> = {
+  good: { label: "Сайн", color: "text-emerald-400 bg-emerald-400/10" },
+  service_due: { label: "Засвар хэрэгтэй", color: "text-rose-500 bg-rose-500/10" },
+  confirmed: { label: "Батлагдсан", color: "text-emerald-400 bg-emerald-400/10" },
+  pending: { label: "Хүлээгдэж байна", color: "text-amber-400 bg-amber-400/10" },
+  delivered: { label: "Хүргэгдсэн", color: "text-emerald-400 bg-emerald-400/10" },
+  processing: { label: "Боловсруулж байна", color: "text-sky-400 bg-sky-400/10" },
+};
+
+// --- Mock Data (Ideally from an API) ---
 const userFleet = [
-  {
-    id: 1,
-    name: "Toyota Camry",
-    year: 2021,
-    plate: "УБ-1234АА",
-    mileage: "42,000 км",
-    lastService: "2024 оны 10-р сар",
-    status: "good",
-    img: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400&q=80",
-  },
-  {
-    id: 2,
-    name: "Hyundai Tucson",
-    year: 2020,
-    plate: "УБ-5678ББ",
-    mileage: "67,500 км",
-    lastService: "2024 оны 8-р сар",
-    status: "service_due",
-    img: "https://images.unsplash.com/photo-1633508800088-ac9bfc9c44e6?w=400&q=80",
-  },
-  {
-    id: 3,
-    name: "Mitsubishi Outlander",
-    year: 2022,
-    plate: "УБ-9012ВВ",
-    mileage: "18,200 км",
-    lastService: "2024 оны 11-р сар",
-    status: "good",
-    img: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=400&q=80",
-  },
-];
-
-const upcomingAppointments = [
-  {
-    id: 1,
-    type: "Жилийн ерөнхий үзлэг",
-    car: "Toyota Camry",
-    date: "2024/10/24",
-    time: "09:00",
-    status: "confirmed",
-  },
-  {
-    id: 2,
-    type: "Тоормосны шалгалт",
-    car: "Hyundai Tucson",
-    date: "2024/10/31",
-    time: "11:00",
-    status: "pending",
-  },
-];
-
-const recentOrders = [
-  {
-    id: "ЗАХ-2401",
-    item: "Тос солих иж бүрдэл",
-    brand: "Mobil 1 Full Synthetic",
-    price: "₮85,000",
-    status: "delivered",
-    date: "10/10",
-  },
-  {
-    id: "ЗАХ-2389",
-    item: "Тоормосны бүрхэвч",
-    brand: "Brembo",
-    price: "₮245,000",
-    status: "processing",
-    date: "10/05",
-  },
-  {
-    id: "ЗАХ-2371",
-    item: "Агаарын шүүлтүүр",
-    brand: "Mann Filter",
-    price: "₮38,000",
-    status: "delivered",
-    date: "09/28",
-  },
+  { id: 1, name: "Toyota Camry", year: 2021, plate: "УБ-1234АА", mileage: "42,000 км", lastService: "2024.10", status: "good" as StatusType, img: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=400" },
+  { id: 2, name: "Hyundai Tucson", year: 2020, plate: "УБ-5678ББ", mileage: "67,500 км", lastService: "2024.08", status: "service_due" as StatusType, img: "https://images.unsplash.com/photo-1633508800088-ac9bfc9c44e6?w=400" },
+  { id: 3, name: "Mitsubishi Outlander", year: 2022, plate: "УБ-9012ВВ", mileage: "18,200 км", lastService: "2024.11", status: "good" as StatusType, img: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=400" },
 ];
 
 const stats = [
-  { label: "Нийт зарлага", value: "₮4,820,000", sub: "нийт дүн" },
-  { label: "Засвар хийлгэсэн", value: "14", sub: "удаа" },
-  { label: "Захиалсан сэлбэг", value: "8", sub: "энэ жил" },
-  { label: "Бүртгэлтэй машин", value: "3", sub: "ширхэг" },
+  { label: "Нийт зарлага", value: "₮4,820k", sub: "нийт дүн" },
+  { label: "Засвар", value: "14", sub: "удаа" },
+  { label: "Сэлбэг", value: "8", sub: "энэ жил" },
+  { label: "Машин", value: "3", sub: "ширхэг" },
 ];
 
-const statusColor: Record<string, string> = {
-  good: "text-green-400 bg-green-400/10",
-  service_due: "text-[#E31B23] bg-[#E31B23]/10",
-  confirmed: "text-green-400 bg-green-400/10",
-  pending: "text-yellow-400 bg-yellow-400/10",
-  delivered: "text-green-400 bg-green-400/10",
-  processing: "text-blue-400 bg-blue-400/10",
-};
+// --- Sub-components ---
+const SectionHeader = ({ title, linkText, href }: { title: string; linkText?: string; href?: string }) => (
+  <div className="flex items-center justify-between mb-5">
+    <h2 className="text-white font-bold text-[11px] uppercase tracking-[0.2em] opacity-70">
+      {title}
+    </h2>
+    {linkText && href && (
+      <Link href={href} className="text-[#E31B23] text-[11px] font-bold hover:opacity-80 transition-opacity">
+        {linkText} <span className="ml-1">→</span>
+      </Link>
+    )}
+  </div>
+);
 
-const statusLabel: Record<string, string> = {
-  good: "Сайн",
-  service_due: "Засвар хэрэгтэй",
-  confirmed: "Батлагдсан",
-  pending: "Хүлээгдэж байна",
-  delivered: "Хүргэгдсэн",
-  processing: "Боловсруулж байна",
-};
+const Badge = ({ status }: { status: StatusType }) => (
+  <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${STATUS_CONFIG[status].color}`}>
+    {STATUS_CONFIG[status].label}
+  </span>
+);
 
 export default function UserOverviewPage() {
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      {/* Гарчиг */}
-      <div className="mb-8">
-        <h1 className="text-white font-black text-3xl uppercase tracking-widest">
-          Хяналтын самбар
-        </h1>
-        <p className="text-white/40 text-sm mt-1">
-          Сайн ирлээ, Батдорж. Таны машинуудын мэдээлэл.
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12 lg:p-16">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <header className="mb-12">
+          <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">
+            Хяналтын <span className="text-[#E31B23]">Самбар</span>
+          </h1>
+          <div className="h-1 w-20 bg-[#E31B23] mb-4" />
+          <p className="text-white/40 text-sm font-medium">
+            Сайн байна уу? Өдрийн мэнд. Таны авто паркийн өнөөдрийн төлөв.
+          </p>
+        </header>
 
-      {/* Статистик */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-[#111111] border border-white/5 rounded-lg p-4"
-          >
-            <p className="text-white/40 text-xs uppercase tracking-widest mb-1">
-              {stat.label}
-            </p>
-            <p className="text-white font-black text-2xl">{stat.value}</p>
-            <p className="text-white/20 text-xs mt-0.5">{stat.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Хоёр баганат */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Зүүн */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Миний машинууд */}
-          <div className="bg-[#111111] border border-white/5 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-sm uppercase tracking-widest">
-                Миний машинууд
-              </h2>
-              <Link href="/user/profile" className="text-[#E31B23] text-xs hover:underline">
-                Удирдах →
-              </Link>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {stats.map((stat) => (
+            <div key={stat.label} className="bg-[#111] border border-white/5 p-5 rounded-2xl hover:border-white/10 transition-colors">
+              <p className="text-white/30 text-[10px] uppercase font-bold tracking-widest mb-2">{stat.label}</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black">{stat.value}</span>
+                <span className="text-[10px] text-white/20 font-medium">{stat.sub}</span>
+              </div>
             </div>
-            <div className="space-y-3">
-              {userFleet.map((car) => (
-                <div
-                  key={car.id}
-                  className="bg-[#0a0a0a] border border-white/5 rounded-md overflow-hidden flex items-center hover:border-white/10 transition-all"
-                >
-                  <div className="w-28 h-20 flex-shrink-0 overflow-hidden">
-                    <img
-                      src={car.img}
-                      alt={car.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 p-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-medium text-sm">{car.name}</p>
-                      <p className="text-white/30 text-xs mt-0.5">
-                        {car.year} · {car.plate}
-                      </p>
-                      <p className="text-white/20 text-xs mt-0.5">
-                        {car.mileage} · Сүүлд: {car.lastService}
-                      </p>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[car.status]}`}>
-                      {statusLabel[car.status]}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Ойрын цаг товлолтууд */}
-          <div className="bg-[#111111] border border-white/5 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-sm uppercase tracking-widest">
-                Ойрын цаг товлолтууд
-              </h2>
-              <Link href="/user/appointments" className="text-[#E31B23] text-xs hover:underline">
-                Бүгдийг харах →
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {upcomingAppointments.map((appt) => (
-                <div
-                  key={appt.id}
-                  className="bg-[#0a0a0a] border border-white/5 rounded-md p-4 flex items-start justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          appt.status === "confirmed" ? "bg-green-400" : "bg-yellow-400"
-                        }`}
-                      />
-                      <p className="text-white text-sm font-medium">{appt.type}</p>
-                    </div>
-                    <p className="text-white/30 text-xs">{appt.car}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white/60 text-xs">{appt.date}</p>
-                    <p className="text-white/40 text-xs">{appt.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Link
-              href="/user/appointments"
-              className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 border border-[#E31B23]/30 text-[#E31B23] text-sm rounded-md hover:bg-[#E31B23] hover:text-white transition-all duration-200"
-            >
-              + Цаг товлох
-            </Link>
-          </div>
+          ))}
         </div>
 
-        {/* Баруун */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Захиалгийн түүх */}
-          <div className="bg-[#111111] border border-white/5 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-sm uppercase tracking-widest">
-                Захиалгийн түүх
-              </h2>
-              <Link href="/user/parts" className="text-[#E31B23] text-xs hover:underline">
-                Дэлгүүр →
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {recentOrders.map((order) => (
-                <div key={order.id} className="bg-[#0a0a0a] border border-white/5 rounded-md p-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-white text-xs font-medium">{order.item}</p>
-                      <p className="text-white/30 text-xs mt-0.5">{order.brand}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Main Content (Left) */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* My Fleet Section */}
+            <section className="bg-[#111] border border-white/5 rounded-3xl p-6 shadow-2xl">
+              <SectionHeader title="Миний машинууд" linkText="Удирдах" href="/user/profile" />
+              <div className="grid gap-4">
+                {userFleet.map((car) => (
+                  <div key={car.id} className="group flex items-center bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden hover:border-[#E31B23]/30 transition-all duration-300">
+                    <div className="relative w-32 h-24 overflow-hidden">
+                      <img src={car.img} alt={car.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[order.status]}`}>
-                      {statusLabel[order.status]}
-                    </span>
+                    <div className="flex-1 px-5 flex justify-between items-center">
+                      <div>
+                        <h3 className="text-sm font-bold text-white/90 mb-1">{car.name}</h3>
+                        <p className="text-[11px] text-white/40 font-mono tracking-tight">
+                          {car.year} • {car.plate} • {car.mileage}
+                        </p>
+                      </div>
+                      <Badge status={car.status} />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-white/50 text-xs">{order.id}</p>
-                    <p className="text-white font-medium text-xs">{order.price}</p>
+                ))}
+              </div>
+            </section>
+
+            {/* Upcoming Section */}
+            <section className="bg-[#111] border border-white/5 rounded-3xl p-6">
+              <SectionHeader title="Ойрын цаг товлолт" linkText="Бүгд" href="/user/appointments" />
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { title: "Ерөнхий үзлэг", date: "10.24", time: "09:00", car: "Camry" },
+                  { title: "Тоормос шалгалт", date: "10.31", time: "11:00", car: "Tucson" }
+                ].map((item, idx) => (
+                  <div key={idx} className="p-4 bg-[#0a0a0a] border border-white/5 rounded-xl flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] text-[#E31B23] font-black uppercase mb-1">{item.date} @ {item.time}</p>
+                      <h4 className="text-sm font-bold">{item.title}</h4>
+                      <p className="text-[11px] text-white/30">{item.car}</p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xs opacity-50">🗓</div>
                   </div>
-                </div>
-              ))}
-            </div>
-            <Link
-              href="/user/parts"
-              className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 border border-white/10 text-white/50 text-sm rounded-md hover:bg-white/5 hover:text-white transition-all duration-200"
-            >
-              Сэлбэг дэлгүүр үзэх
-            </Link>
+                ))}
+              </div>
+            </section>
           </div>
 
-          {/* Хурдан үйлдлүүд */}
-          <div className="bg-[#111111] border border-white/5 rounded-lg p-6">
-            <h2 className="text-white font-bold text-sm uppercase tracking-widest mb-4">
-              Хурдан үйлдлүүд
-            </h2>
-            <div className="space-y-2">
-              <Link
-                href="/user/appointments"
-                className="w-full flex items-center gap-3 py-3 px-4 bg-[#E31B23] text-white text-sm font-medium rounded-md hover:bg-[#c41620] transition-all"
-              >
-                <span>📅</span> Цаг товлох
-              </Link>
-              <Link
-                href="/user/parts"
-                className="w-full flex items-center gap-3 py-3 px-4 bg-[#0a0a0a] border border-white/10 text-white/70 text-sm rounded-md hover:border-white/20 hover:text-white transition-all"
-              >
-                <span>🔧</span> Сэлбэг захиалах
-              </Link>
-              <Link
-                href="/user/services"
-                className="w-full flex items-center gap-3 py-3 px-4 bg-[#0a0a0a] border border-white/10 text-white/70 text-sm rounded-md hover:border-white/20 hover:text-white transition-all"
-              >
-                <span>📋</span> Үйлчилгээ харах
-              </Link>
-            </div>
+          {/* Sidebar Content (Right) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Quick Actions */}
+            <section className="bg-[#E31B23] rounded-3xl p-6 shadow-[0_0_50px_-12px_rgba(227,27,35,0.3)]">
+              <h2 className="text-white font-black text-xs uppercase tracking-widest mb-6">Хурдан үйлдлүүд</h2>
+              <div className="space-y-3">
+                <button className="w-full bg-white text-black py-3 rounded-xl text-xs font-black uppercase tracking-tighter hover:bg-black hover:text-white transition-all duration-300">
+                  + Цаг товлох
+                </button>
+                <button className="w-full bg-black/20 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-tighter hover:bg-black/40 transition-all border border-white/10">
+                  Сэлбэг захиалах
+                </button>
+              </div>
+            </section>
+
+            {/* Recent Orders */}
+            <section className="bg-[#111] border border-white/5 rounded-3xl p-6">
+              <SectionHeader title="Сүүлийн захиалга" />
+              <div className="space-y-4">
+                {[
+                  { item: "Mobil 1 Oil", price: "₮85k", status: "delivered" },
+                  { item: "Brembo Pads", price: "₮245k", status: "processing" }
+                ].map((order, idx) => (
+                  <div key={idx} className="flex justify-between items-center group">
+                    <div>
+                      <p className="text-xs font-bold group-hover:text-[#E31B23] transition-colors">{order.item}</p>
+                      <p className="text-[10px] text-white/30">{order.price}</p>
+                    </div>
+                    <div className={`w-2 h-2 rounded-full ${order.status === 'delivered' ? 'bg-emerald-500' : 'bg-sky-500'}`} />
+                  </div>
+                ))}
+              </div>
+            </section>
+
           </div>
         </div>
       </div>
