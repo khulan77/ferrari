@@ -223,7 +223,7 @@ export default function UserOverviewPage() {
                 <div className="flex items-center gap-2.5">
                   <span className="w-1.5 h-4 bg-[#E31B23] rounded-full inline-block" />
                   <h2 className="text-white font-bold text-sm uppercase tracking-[0.12em]">
-                    Миний машинууд
+                    Миний машин
                   </h2>
                   <span className="text-white/20 text-xs bg-white/5 px-2 py-0.5 rounded-full">
                     {fleet.length}
@@ -334,7 +334,6 @@ export default function UserOverviewPage() {
             </div>
           </div>
 
-          {/* ══ БАРУУН БАГАНА ════════════════════════════════ */}
           <div className="lg:col-span-2 space-y-5">
 
             {/* Сүүлийн үйл ажиллагаа */}
