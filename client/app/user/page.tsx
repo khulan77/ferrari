@@ -331,13 +331,6 @@ export default function UserOverviewPage() {
                   </div>
                 ))}
               </div>
-
-              <Link
-                href="/user/appointments"
-                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 border border-[#E31B23]/25 text-[#E31B23] text-xs font-medium rounded-xl hover:bg-[#E31B23] hover:text-white hover:border-[#E31B23] transition-all duration-200 tracking-wide"
-              >
-                + Цаг товлох
-              </Link>
             </div>
           </div>
 

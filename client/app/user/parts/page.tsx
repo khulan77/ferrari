@@ -12,9 +12,10 @@ import {
   CreditCard,
   Info,
   Package,
+  Search,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────
 
 type Part = {
   id: number;
@@ -43,9 +44,9 @@ interface Mechanic {
   available: boolean;
 }
 
-// ─── Static data ──────────────────────────────────────────────────────────────
+// ─── Static data ────────────────────────────────────────────────────────────
 
-const categories = ["Бүгд", "Хөдөлгүүр", "Тоормос", "Түдгэлзүүр", "Ялгаруулагч", "Дугуй", "Цахилгаан"];
+const categories = ["Бүгд", "Хөдөлгүүр", "Тоормос", "Түдгэлзүүр", "Дугуй", "Цахилгаан"];
 
 const parts: Part[] = [
   { id: 1, name: "Бүрэн нийлэг тосны иж бүрдэл", brand: "Mobil 1 Full Synthetic", category: "Хөдөлгүүр", price: "₮85,000", priceNum: 85000, compatibility: ["Toyota Camry", "Hyundai Tucson"], inStock: true, badge: "Эрэлттэй" },
@@ -58,13 +59,6 @@ const parts: Part[] = [
   { id: 8, name: "Аккумлятор 60Ah", brand: "Bosch Silver", category: "Цахилгаан", price: "₮195,000", priceNum: 195000, compatibility: ["Toyota Camry", "Hyundai Tucson", "Mitsubishi Outlander"], inStock: true },
   { id: 9, name: "Хөргөлтийн шингэн 5L", brand: "Toyota Genuine", category: "Хөдөлгүүр", price: "₮45,000", priceNum: 45000, compatibility: ["Toyota Camry"], inStock: true },
   { id: 10, name: "Жолооны хүч дамжуулах бүс", brand: "Gates", category: "Хөдөлгүүр", price: "₮78,000", priceNum: 78000, compatibility: ["Hyundai Tucson", "Mitsubishi Outlander"], inStock: false },
-];
-
-const myOrders = [
-  { id: "ЗАХ-2401", item: "Бүрэн нийлэг тосны иж бүрдэл", date: "10/10", status: "Хүргэгдсэн", total: "₮85,000" },
-  { id: "ЗАХ-2389", item: "Тоормосны бүрхэвч — урд", date: "10/05", status: "Боловсруулж байна", total: "₮145,000" },
-  { id: "ЗАХ-2371", item: "Агаарын шүүлтүүр", date: "09/28", status: "Хүргэгдсэн", total: "₮38,000" },
-  { id: "ЗАХ-2355", item: "Michelin Primacy 4 x2", date: "09/10", status: "Хүргэгдсэн", total: "₮570,000" },
 ];
 
 const MECHANICS: Mechanic[] = [
@@ -99,13 +93,13 @@ const DATES = [
 
 const badgeStyle: Record<string, string> = {
   Эрэлттэй: "bg-[#E31B23]/10 text-[#E31B23] border border-[#E31B23]/20",
-  Шинэ: "bg-blue-400/10 text-blue-400 border border-blue-400/20",
-  Чанарын: "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20",
+  Шинэ: "bg-sky-400/10 text-sky-400 border border-sky-400/20",
+  Чанарын: "bg-amber-400/10 text-amber-400 border border-amber-400/20",
 };
 
 const fmt = (n: number) => n.toLocaleString("mn-MN");
 
-// ─── Checkout overlay ─────────────────────────────────────────────────────────
+// ─── Checkout overlay ────────────────────────────────────────────────────────
 
 function CheckoutOverlay({ cart, onClose }: { cart: number[]; onClose: () => void }) {
   const cartParts = parts.filter((p) => cart.includes(p.id));
@@ -119,78 +113,95 @@ function CheckoutOverlay({ cart, onClose }: { cart: number[]; onClose: () => voi
   const [payMethod, setPayMethod] = useState<"qpay" | "socialpay" | "card">("qpay");
   const [orderId] = useState("ЗАХ-" + Math.floor(2400 + Math.random() * 100));
 
+  const stepLabel: Record<number, string> = { 2: "Цаг захиалах", 3: "Урьдчилгаа", 4: "Баталгааж." };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Panel — KEY FIX: fixed height with internal scroll */}
-      <div className="relative z-10 w-full sm:w-[480px] bg-[#0f0f0f] border border-white/10 sm:rounded-2xl rounded-t-2xl flex flex-col"
-        style={{ height: "min(92vh, 780px)" }}>
-
-        {/* ── Top bar (never scrolls) ── */}
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <div className="flex items-center gap-1.5">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative z-10 w-full sm:w-[460px] bg-[#0d0d0d] border border-white/[0.08] sm:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl"
+        style={{ height: "min(92vh, 760px)" }}
+      >
+        {/* Top bar */}
+        <div className="flex-none px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+          <div className="flex items-center gap-3">
             {[2, 3, 4].map((s) => (
-              <div key={s} className={`h-1 rounded-full transition-all duration-300 ${s <= step ? "bg-[#E31B23]" : "bg-white/10"} ${s === 2 ? "w-10" : "w-7"}`} />
+              <div key={s} className="flex items-center gap-1.5">
+                <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold transition-all ${
+                  s < step ? "bg-[#E31B23] border-[#E31B23] text-white"
+                  : s === step ? "border-[#E31B23] text-[#E31B23]"
+                  : "border-white/10 text-white/20"
+                }`}>
+                  {s < step ? "✓" : s - 1}
+                </div>
+                <span className={`text-[10px] font-medium tracking-wide hidden sm:block ${s === step ? "text-white/60" : "text-white/20"}`}>
+                  {stepLabel[s]}
+                </span>
+                {s < 4 && <div className={`w-6 h-px ${s < step ? "bg-[#E31B23]/50" : "bg-white/10"}`} />}
+              </div>
             ))}
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors">
-            <X size={14} />
+          <button onClick={onClose} className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-white transition-all">
+            <X size={13} />
           </button>
         </div>
 
-        {/* ── Scrollable body ── */}
-        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain">
 
-          {/* STEP 2: Booking */}
+          {/* ── STEP 2: Booking ── */}
           {step === 2 && (
-            <div className="p-6 space-y-5">
+            <div className="p-5 space-y-5">
               <div>
-                <button onClick={onClose} className="flex items-center gap-1 text-white/30 text-xs mb-3 hover:text-white transition-colors">
-                  <ArrowLeft size={12} /> Буцах
+                <button onClick={onClose} className="flex items-center gap-1 text-white/25 hover:text-white/60 text-xs mb-4 transition-colors">
+                  <ArrowLeft size={11} /> Буцах
                 </button>
-                <h2 className="text-white font-black text-xl uppercase tracking-widest">Цаг Захиалах</h2>
+                <div className="w-5 h-0.5 bg-[#E31B23] mb-2" />
+                <h2 className="text-white font-black text-xl tracking-tight">Цаг Захиалах</h2>
                 <p className="text-white/30 text-xs mt-0.5">Сэлбэгийг суурилуулах цагаа сонгоно уу</p>
               </div>
 
               {/* Cart summary */}
-              <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-2">
-                <p className="text-white/30 text-xs uppercase tracking-widest flex items-center gap-1.5 mb-3">
-                  <Package size={10} /> Захиалсан сэлбэгүүд
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                <p className="text-white/25 text-[10px] uppercase tracking-widest flex items-center gap-1.5 mb-3">
+                  <Package size={9} /> Сагсны бараанууд
                 </p>
-                {cartParts.map((p) => (
-                  <div key={p.id} className="flex justify-between items-center">
-                    <span className="text-white/60 text-sm truncate mr-2">{p.name}</span>
-                    <span className="text-white/40 text-sm flex-shrink-0">{p.price}</span>
-                  </div>
-                ))}
-                <div className="border-t border-white/5 pt-2 flex justify-between">
-                  <span className="text-white/40 text-sm">Нийт</span>
-                  <span className="text-white font-bold text-sm">₮{fmt(cartTotal)}</span>
+                <div className="space-y-1.5">
+                  {cartParts.map((p) => (
+                    <div key={p.id} className="flex justify-between items-center">
+                      <span className="text-white/55 text-sm truncate mr-2">{p.name}</span>
+                      <span className="text-white/40 text-sm flex-shrink-0">{p.price}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-white/[0.06] mt-3 pt-3 flex justify-between">
+                  <span className="text-white/35 text-sm">Нийт</span>
+                  <span className="text-white font-bold">₮{fmt(cartTotal)}</span>
                 </div>
               </div>
 
               {/* Wait notice */}
-              <div className="bg-amber-950/30 border border-amber-800/30 rounded-xl p-3 flex items-start gap-2">
-                <Info size={13} className="text-amber-400 mt-0.5 flex-shrink-0" />
-                <p className="text-amber-300/80 text-xs leading-relaxed">
-                  Одоогийн ачаалал өндөр. Хүлээлтийн хугацаа <strong className="text-amber-300">30–40 минут</strong>. Цагаа тогтоосноор хүлээхгүй.
+              <div className="bg-amber-950/25 border border-amber-800/25 rounded-xl p-3.5 flex items-start gap-2.5">
+                <Info size={12} className="text-amber-400/80 mt-0.5 flex-shrink-0" />
+                <p className="text-amber-300/70 text-xs leading-relaxed">
+                  Одоогийн ачаалал өндөр. Хүлээлт <strong className="text-amber-300">30–40 мин</strong>. Цагаа тогтоосноор хүлээхгүй.
                 </p>
               </div>
 
-              {/* Date */}
+              {/* Date selector */}
               <div>
-                <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Огноо</p>
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                <p className="text-white/25 text-[10px] uppercase tracking-widest mb-2.5">Огноо сонгох</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
                   {DATES.map((d, i) => (
                     <button key={i} onClick={() => setDateIdx(i)}
-                      className={`flex flex-col items-center px-3 py-2 rounded-xl border min-w-[60px] transition-all text-xs flex-shrink-0 ${
-                        dateIdx === i ? "bg-[#E31B23] border-[#E31B23] text-white" : "border-white/10 text-white/40 hover:border-white/20"
+                      className={`flex flex-col items-center px-3.5 py-2.5 rounded-xl border min-w-[58px] transition-all text-xs flex-shrink-0 ${
+                        dateIdx === i
+                          ? "bg-[#E31B23] border-[#E31B23] text-white shadow-lg shadow-[#E31B23]/20"
+                          : "border-white/[0.08] text-white/35 hover:border-white/20 hover:text-white/60"
                       }`}>
-                      {d.label && <span className="text-[9px] font-bold uppercase mb-0.5">{d.label}</span>}
-                      <span className="font-semibold">{d.date}</span>
-                      <span className="opacity-60 text-[10px]">{d.day}</span>
+                      {d.label && <span className="text-[8px] font-black uppercase mb-0.5 tracking-widest">{d.label}</span>}
+                      <span className="font-bold text-sm">{d.date}</span>
+                      <span className="opacity-50 text-[10px] mt-0.5">{d.day}</span>
                     </button>
                   ))}
                 </div>
@@ -198,20 +209,20 @@ function CheckoutOverlay({ cart, onClose }: { cart: number[]; onClose: () => voi
 
               {/* Time slots */}
               <div>
-                <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Цаг</p>
+                <p className="text-white/25 text-[10px] uppercase tracking-widest mb-2.5">Цаг сонгох</p>
                 <div className="grid grid-cols-4 gap-2">
                   {TIME_SLOTS.map((s) => (
                     <button key={s.time} onClick={() => s.available && setSlot(s)} disabled={!s.available}
-                      className={`py-2.5 rounded-xl border text-xs font-medium relative transition-all ${
+                      className={`py-2.5 rounded-xl border text-xs font-semibold relative transition-all ${
                         !s.available
-                          ? "border-white/[0.04] text-white/15 cursor-not-allowed"
+                          ? "border-white/[0.04] text-white/12 cursor-not-allowed bg-white/[0.01]"
                           : slot?.time === s.time
-                          ? "border-[#E31B23] bg-[#E31B23] text-white"
-                          : "border-white/10 text-white/50 hover:border-white/25 hover:text-white"
+                          ? "border-[#E31B23] bg-[#E31B23] text-white shadow-lg shadow-[#E31B23]/20"
+                          : "border-white/[0.08] text-white/45 hover:border-white/20 hover:text-white"
                       }`}>
                       {s.time}
                       {s.available && s.waitMins > 0 && (
-                        <span className="absolute -top-1.5 -right-1 text-[9px] bg-amber-500 text-black rounded-full px-1 font-bold leading-4">
+                        <span className="absolute -top-1.5 -right-1 text-[8px] bg-amber-500 text-black rounded-full px-1 font-black leading-4">
                           {s.waitMins}м
                         </span>
                       )}
@@ -222,27 +233,29 @@ function CheckoutOverlay({ cart, onClose }: { cart: number[]; onClose: () => voi
 
               {/* Mechanic */}
               <div>
-                <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Механик</p>
+                <p className="text-white/25 text-[10px] uppercase tracking-widest mb-2.5">Механик сонгох</p>
                 <div className="space-y-2">
                   {MECHANICS.map((m) => (
                     <button key={m.id} onClick={() => m.available && setMechanic(m)} disabled={!m.available}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${
                         !m.available
-                          ? "border-white/[0.03] opacity-30 cursor-not-allowed"
+                          ? "border-white/[0.03] opacity-25 cursor-not-allowed"
                           : mechanic?.id === m.id
-                          ? "border-[#E31B23]/50 bg-[#E31B23]/5"
-                          : "border-white/5 hover:border-white/15"
+                          ? "border-[#E31B23]/40 bg-[#E31B23]/[0.06]"
+                          : "border-white/[0.06] hover:border-white/15 hover:bg-white/[0.02]"
                       }`}>
-                      <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${
+                        mechanic?.id === m.id ? "bg-[#E31B23]/20 text-[#E31B23]" : "bg-white/[0.06] text-white/40"
+                      }`}>
                         {m.name.split(".")[1]?.trim()[0] || m.name[0]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-semibold">{m.name}</p>
-                        <p className="text-white/30 text-xs">{m.speciality}</p>
+                        <p className="text-white/25 text-xs mt-0.5">{m.speciality}</p>
                       </div>
-                      <div className="flex items-center gap-1 text-amber-400 flex-shrink-0">
-                        <Star size={11} fill="currentColor" />
-                        <span className="text-xs font-semibold">{m.rating}</span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Star size={10} className="text-amber-400" fill="currentColor" />
+                        <span className="text-white/70 text-xs font-bold">{m.rating}</span>
                         <span className="text-white/20 text-xs">({m.reviews})</span>
                       </div>
                     </button>
@@ -250,61 +263,63 @@ function CheckoutOverlay({ cart, onClose }: { cart: number[]; onClose: () => voi
                 </div>
               </div>
 
-              {/* CTA — inside scroll so it's always reachable */}
               <button onClick={() => setStep(3)} disabled={!slot || !mechanic}
-                className="w-full py-3.5 bg-[#E31B23] text-white rounded-xl font-bold text-sm disabled:opacity-20 disabled:cursor-not-allowed hover:bg-[#c41620] transition-colors flex items-center justify-center gap-2">
-                Төлбөр руу <ChevronRight size={16} />
+                className="w-full py-3.5 bg-[#E31B23] text-white rounded-xl font-bold text-sm disabled:opacity-20 disabled:cursor-not-allowed hover:bg-[#c41620] transition-all shadow-lg shadow-[#E31B23]/20 flex items-center justify-center gap-2">
+                Төлбөр руу <ChevronRight size={15} />
               </button>
             </div>
           )}
 
-          {/* STEP 3: Payment */}
+          {/* ── STEP 3: Payment ── */}
           {step === 3 && slot && mechanic && (
-            <div className="p-6 space-y-5">
+            <div className="p-5 space-y-5">
               <div>
-                <button onClick={() => setStep(2)} className="flex items-center gap-1 text-white/30 text-xs mb-3 hover:text-white transition-colors">
-                  <ArrowLeft size={12} /> Буцах
+                <button onClick={() => setStep(2)} className="flex items-center gap-1 text-white/25 hover:text-white/60 text-xs mb-4 transition-colors">
+                  <ArrowLeft size={11} /> Буцах
                 </button>
-                <h2 className="text-white font-black text-xl uppercase tracking-widest">Урьдчилгаа</h2>
-                <p className="text-white/30 text-xs mt-0.5">Захиалгаа баталгаажуулах урьдчилгаа</p>
+                <div className="w-5 h-0.5 bg-[#E31B23] mb-2" />
+                <h2 className="text-white font-black text-xl tracking-tight">Урьдчилгаа</h2>
+                <p className="text-white/30 text-xs mt-0.5">Захиалгаа баталгаажуулах 30% урьдчилгаа</p>
               </div>
 
-              {/* Order summary */}
-              <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-2">
+              {/* Summary */}
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
                 {cartParts.map((p) => (
                   <div key={p.id} className="flex justify-between">
-                    <span className="text-white/50 text-sm truncate mr-2">{p.name}</span>
-                    <span className="text-white/50 text-sm flex-shrink-0">{p.price}</span>
+                    <span className="text-white/45 text-sm truncate mr-2">{p.name}</span>
+                    <span className="text-white/40 text-sm flex-shrink-0">{p.price}</span>
                   </div>
                 ))}
-                <div className="border-t border-white/5 pt-2 space-y-1.5">
+                <div className="border-t border-white/[0.06] pt-3 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/40">Цаг</span>
-                    <span className="text-white/70">{DATES[dateIdx].date} · {slot.time}</span>
+                    <span className="text-white/35">Цаг</span>
+                    <span className="text-white/60 font-medium">{DATES[dateIdx].date} · {slot.time}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/40">Механик</span>
-                    <span className="text-white/70">{mechanic.name}</span>
+                    <span className="text-white/35">Механик</span>
+                    <span className="text-white/60 font-medium">{mechanic.name}</span>
                   </div>
-                  <div className="border-t border-white/5 pt-2 flex justify-between">
-                    <span className="text-white/40 text-sm">Нийт үнэ</span>
-                    <span className="text-white text-sm">₮{fmt(cartTotal)}</span>
+                  <div className="border-t border-white/[0.06] pt-2 flex justify-between">
+                    <span className="text-white/35 text-sm">Нийт</span>
+                    <span className="text-white/60 text-sm">₮{fmt(cartTotal)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[#E31B23] text-sm font-semibold">Урьдчилгаа (30%)</span>
-                    <span className="text-[#E31B23] text-xl font-black">₮{fmt(deposit)}</span>
+                    <span className="text-[#E31B23] text-sm font-bold">Урьдчилгаа (30%)</span>
+                    <span className="text-[#E31B23] text-2xl font-black">₮{fmt(deposit)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Payment method */}
               <div>
-                <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Төлбөрийн хэрэгсэл</p>
+                <p className="text-white/25 text-[10px] uppercase tracking-widest mb-2.5">Төлбөрийн хэрэгсэл</p>
                 <div className="grid grid-cols-3 gap-2">
                   {(["qpay", "socialpay", "card"] as const).map((m) => (
                     <button key={m} onClick={() => setPayMethod(m)}
-                      className={`py-2.5 rounded-xl border text-xs font-bold transition-all ${
-                        payMethod === m ? "border-[#E31B23] bg-[#E31B23]/10 text-white" : "border-white/10 text-white/30 hover:border-white/20"
+                      className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                        payMethod === m
+                          ? "border-[#E31B23] bg-[#E31B23]/10 text-white"
+                          : "border-white/[0.08] text-white/30 hover:border-white/20 hover:text-white/60"
                       }`}>
                       {m === "qpay" ? "QPay" : m === "socialpay" ? "SocialPay" : "Карт"}
                     </button>
@@ -314,111 +329,118 @@ function CheckoutOverlay({ cart, onClose }: { cart: number[]; onClose: () => voi
 
               {payMethod === "qpay" && (
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-32 h-32 bg-white rounded-xl flex items-center justify-center p-2.5">
-                    <div className="w-full h-full grid grid-cols-7 gap-px">
-                      {Array.from({ length: 49 }).map((_, i) => (
+                  <div className="w-36 h-36 bg-white rounded-2xl flex items-center justify-center p-3 shadow-xl">
+                    <div className="w-full h-full grid grid-cols-9 gap-px">
+                      {Array.from({ length: 81 }).map((_, i) => (
                         <div key={i} className={`${Math.random() > 0.5 ? "bg-black" : "bg-white"} rounded-sm`} />
                       ))}
                     </div>
                   </div>
-                  <p className="text-white/30 text-xs text-center">QPay апп-аар QR код уншуулна уу</p>
-                  <p className="text-white font-black text-lg">₮{fmt(deposit)}</p>
+                  <p className="text-white/25 text-xs">QPay апп-аар уншуулна уу</p>
+                  <p className="text-white font-black text-2xl">₮{fmt(deposit)}</p>
                 </div>
               )}
 
               {payMethod === "card" && (
-                <div className="space-y-2">
-                  <input className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/25" placeholder="Картын дугаар" />
+                <div className="space-y-2.5">
+                  <div className="relative">
+                    <CreditCard size={14} className="absolute left-3.5 top-3 text-white/20" />
+                    <input className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder-white/15 focus:outline-none focus:border-white/20 transition-colors" placeholder="0000 0000 0000 0000" />
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <input className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/25" placeholder="MM/YY" />
-                    <input className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/25" placeholder="CVV" />
+                    <input className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/15 focus:outline-none focus:border-white/20 transition-colors" placeholder="MM / YY" />
+                    <input className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/15 focus:outline-none focus:border-white/20 transition-colors" placeholder="CVV" />
                   </div>
                 </div>
               )}
 
               {payMethod === "socialpay" && (
-                <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 text-center">
-                  <p className="text-white/40 text-sm">SocialPay апп руу шилжүүлэх...</p>
-                  <p className="text-white font-black text-xl mt-1">₮{fmt(deposit)}</p>
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 text-center">
+                  <p className="text-white/30 text-sm">SocialPay апп руу шилжүүлэх...</p>
+                  <p className="text-white font-black text-2xl mt-2">₮{fmt(deposit)}</p>
                 </div>
               )}
 
               <button onClick={() => setStep(4)}
-                className="w-full py-3.5 bg-[#E31B23] text-white rounded-xl font-bold text-sm hover:bg-[#c41620] transition-colors flex items-center justify-center gap-2">
-                <CreditCard size={16} /> ₮{fmt(deposit)} төлөх
+                className="w-full py-3.5 bg-[#E31B23] text-white rounded-xl font-bold text-sm hover:bg-[#c41620] transition-all shadow-lg shadow-[#E31B23]/20 flex items-center justify-center gap-2">
+                <CreditCard size={15} /> ₮{fmt(deposit)} төлөх
               </button>
             </div>
           )}
 
-          {/* STEP 4: Confirmed */}
+          {/* ── STEP 4: Confirmed ── */}
           {step === 4 && slot && mechanic && (
-            <div className="p-6 flex flex-col items-center text-center gap-5 pt-10">
-              <div className="w-16 h-16 rounded-full bg-green-900/30 border border-green-600/30 flex items-center justify-center">
-                <CheckCircle2 size={32} className="text-green-400" />
+            <div className="p-5 flex flex-col items-center text-center gap-5 pt-10">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-emerald-900/20 border border-emerald-600/20 flex items-center justify-center">
+                  <CheckCircle2 size={36} className="text-emerald-400" />
+                </div>
+                <div className="absolute inset-0 rounded-full bg-emerald-400/5 animate-ping" />
               </div>
               <div>
-                <h2 className="text-white font-black text-xl uppercase tracking-widest mb-1">Баталгаажлаа!</h2>
-                <p className="text-white/30 text-sm">Захиалга амжилттай бүртгэгдлээ</p>
+                <div className="w-5 h-0.5 bg-emerald-400 mx-auto mb-2" />
+                <h2 className="text-white font-black text-xl tracking-tight">Баталгааж лаа!</h2>
+                <p className="text-white/30 text-sm mt-0.5">Захиалга амжилттай бүртгэгдлээ</p>
               </div>
 
-              <div className="w-full bg-white/[0.03] border border-white/5 rounded-xl p-4 text-left space-y-2">
+              <div className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 text-left space-y-2.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/40">Дугаар</span>
+                  <span className="text-white/30">Дугаар</span>
                   <span className="text-[#E31B23] font-bold">{orderId}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/40">Цаг</span>
-                  <span className="text-white">{DATES[dateIdx].date} · {slot.time}</span>
+                  <span className="text-white/30">Цаг</span>
+                  <span className="text-white font-medium">{DATES[dateIdx].date} · {slot.time}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/40">Механик</span>
-                  <span className="text-white">{mechanic.name}</span>
+                  <span className="text-white/30">Механик</span>
+                  <span className="text-white font-medium">{mechanic.name}</span>
                 </div>
-                <div className="border-t border-white/5 pt-2">
+                <div className="border-t border-white/[0.06] pt-2 space-y-1.5">
                   {cartParts.map((p) => (
                     <div key={p.id} className="flex justify-between text-sm">
-                      <span className="text-white/50 truncate mr-2">{p.name}</span>
-                      <span className="text-white/50 flex-shrink-0">{p.price}</span>
+                      <span className="text-white/40 truncate mr-2">{p.name}</span>
+                      <span className="text-white/40 flex-shrink-0">{p.price}</span>
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between text-sm pt-1">
-                  <span className="text-white/40">Урьдчилгаа</span>
-                  <span className="text-green-400 font-semibold">Төлөгдсөн ✓</span>
+                <div className="border-t border-white/[0.06] pt-2 flex justify-between items-center">
+                  <span className="text-white/30 text-sm">Урьдчилгаа</span>
+                  <span className="text-emerald-400 font-semibold text-sm flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Төлөгдсөн
+                  </span>
                 </div>
               </div>
 
-              <div className="bg-amber-950/30 border border-amber-800/30 rounded-xl p-3 w-full">
-                <p className="text-amber-300/80 text-xs">
+              <div className="bg-amber-950/20 border border-amber-800/20 rounded-xl p-3.5 w-full">
+                <p className="text-amber-300/70 text-xs leading-relaxed">
                   📍 Цагаасаа <strong className="text-amber-300">15 минут өмнө</strong> ирнэ үү
                 </p>
               </div>
 
-              <div className="flex gap-3 w-full">
-                <button className="flex-1 py-2.5 border border-white/10 text-white/40 rounded-xl text-sm hover:border-white/20 hover:text-white transition-colors flex items-center justify-center gap-1">
+              <div className="flex gap-2.5 w-full">
+                <button className="flex-1 py-3 border border-white/[0.08] text-white/35 rounded-xl text-sm hover:border-white/15 hover:text-white/60 transition-all flex items-center justify-center gap-1.5">
                   <CalendarDays size={13} /> Нэмэх
                 </button>
                 <button onClick={onClose}
-                  className="flex-1 py-2.5 bg-[#E31B23] text-white rounded-xl text-sm font-bold hover:bg-[#c41620] transition-colors">
+                  className="flex-1 py-3 bg-[#E31B23] text-white rounded-xl text-sm font-bold hover:bg-[#c41620] transition-all">
                   Дуусгах
                 </button>
               </div>
             </div>
           )}
         </div>
-        {/* end scrollable body */}
       </div>
     </div>
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function PartsShopPage() {
   const [activeCategory, setActiveCategory] = useState("Бүгд");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<number[]>([]);
-  const [tab, setTab] = useState<"shop" | "orders">("shop");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const filtered = parts.filter((p) => {
@@ -430,113 +452,163 @@ export default function PartsShopPage() {
   });
 
   const addToCart = (id: number) => {
-    setCart((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    setCart((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   const cartTotal = parts.filter((p) => cart.includes(p.id)).reduce((s, p) => s + p.priceNum, 0);
 
-  const handleCheckoutDone = () => {
-    setCheckoutOpen(false);
-    setCart([]);
-  };
-
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] p-8">
       {checkoutOpen && cart.length > 0 && (
-        <CheckoutOverlay cart={cart} onClose={handleCheckoutDone} />
+        <CheckoutOverlay cart={cart} onClose={() => { setCheckoutOpen(false); setCart([]); }} />
       )}
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-white font-black text-3xl uppercase tracking-widest">Сэлбэг дэлгүүр</h1>
-          <p className="text-white/40 text-sm mt-1">Таны машинд зориулсан сэлбэг, материалууд</p>
-        </div>
-        {cart.length > 0 && (
-          <button onClick={() => setCheckoutOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#E31B23] text-white rounded-xl text-sm font-bold hover:bg-[#c41620] transition-all">
-            <ShoppingCart size={15} />
-            {cart.length} бараа · ₮{fmt(cartTotal)}
-            <ChevronRight size={14} />
-          </button>
-        )}
-      </div>
+      <div className="max-w-6xl mx-auto">
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-[#111111] border border-white/5 rounded-lg p-1 w-fit">
-        <button onClick={() => setTab("shop")}
-          className={`px-4 py-2 text-sm rounded-md transition-all ${tab === "shop" ? "bg-[#E31B23] text-white font-medium" : "text-white/40 hover:text-white"}`}>
-          Сэлбэг харах
-        </button>
-        <button onClick={() => setTab("orders")}
-          className={`px-4 py-2 text-sm rounded-md transition-all ${tab === "orders" ? "bg-[#E31B23] text-white font-medium" : "text-white/40 hover:text-white"}`}>
-          Миний захиалгууд
-        </button>
-      </div>
-
-      {tab === "shop" ? (
-        <>
-          {cart.length > 0 && (
-            <div className="mb-6 bg-[#E31B23]/10 border border-[#E31B23]/20 rounded-xl p-4 flex items-center justify-between">
-              <p className="text-[#E31B23] text-sm font-medium">
-                {cart.length} бараа сагсанд · <span className="text-white">₮{fmt(cartTotal)}</span>
-              </p>
-              <button onClick={() => setCheckoutOpen(true)}
-                className="px-4 py-1.5 bg-[#E31B23] text-white text-sm rounded-lg hover:bg-[#c41620] transition-all flex items-center gap-1">
-                Цаг захиалах <ChevronRight size={13} />
-              </button>
-            </div>
-          )}
-
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Сэлбэг эсвэл брэнд хайх..."
-              className="flex-1 bg-[#111111] border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-white/20 placeholder:text-white/20 transition-colors" />
-            <div className="flex gap-2 flex-wrap">
-              {categories.map((cat) => (
-                <button key={cat} onClick={() => setActiveCategory(cat)}
-                  className={`px-3 py-2 text-xs rounded-lg transition-all ${
-                    activeCategory === cat ? "bg-[#E31B23] text-white" : "bg-[#111111] border border-white/10 text-white/50 hover:text-white hover:border-white/20"
-                  }`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
+        {/* ── Гарчиг ── */}
+        <div className="flex items-end justify-between mb-10">
+          <div>
+            <div className="w-8 h-0.5 bg-[#E31B23] mb-3" />
+            <h1 className="text-white font-black text-4xl tracking-tight">Сэлбэг дэлгүүр</h1>
+            <p className="text-white/30 text-sm mt-1.5 font-light">
+              Таны машинд тохирох сэлбэг, материалууд
+            </p>
           </div>
 
+          {/* Cart badge */}
+          {cart.length > 0 && (
+            <button
+              onClick={() => setCheckoutOpen(true)}
+              className="flex items-center gap-3 px-5 py-3 bg-[#E31B23] text-white rounded-xl text-sm font-bold hover:bg-[#c41620] transition-all shadow-xl shadow-[#E31B23]/25 group"
+            >
+              <div className="relative">
+                <ShoppingCart size={16} />
+                <span className="absolute -top-2 -right-2 w-4 h-4 bg-white text-[#E31B23] text-[9px] font-black rounded-full flex items-center justify-center">
+                  {cart.length}
+                </span>
+              </div>
+              <span>₮{fmt(cartTotal)}</span>
+              <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          )}
+        </div>
+
+        {/* ── Хайлт + Ангилал ── */}
+        <div className="flex flex-col md:flex-row gap-3 mb-8">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Сэлбэг эсвэл брэнд хайх..."
+              className="w-full bg-[#0f0f0f] border border-white/[0.07] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/15 focus:outline-none focus:border-white/15 transition-colors"
+            />
+          </div>
+
+          {/* Category pills */}
+          <div className="flex gap-2 flex-wrap">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2.5 text-xs font-semibold rounded-xl transition-all tracking-wide ${
+                  activeCategory === cat
+                    ? "bg-[#E31B23] text-white shadow-lg shadow-[#E31B23]/20"
+                    : "bg-[#0f0f0f] border border-white/[0.07] text-white/35 hover:text-white/70 hover:border-white/15"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Сагсны мэдэгдэл ── */}
+        {cart.length > 0 && (
+          <div className="mb-6 flex items-center justify-between bg-[#E31B23]/[0.07] border border-[#E31B23]/15 rounded-xl px-5 py-3.5">
+            <div className="flex items-center gap-2.5">
+              <ShoppingCart size={14} className="text-[#E31B23]" />
+              <p className="text-[#E31B23] text-sm font-semibold">
+                {cart.length} бараа · <span className="text-white">₮{fmt(cartTotal)}</span>
+              </p>
+            </div>
+            <button
+              onClick={() => setCheckoutOpen(true)}
+              className="flex items-center gap-1.5 text-[#E31B23] text-xs font-bold hover:text-white transition-colors"
+            >
+              Цаг захиалах <ChevronRight size={12} />
+            </button>
+          </div>
+        )}
+
+        {/* ── Сэлбэгийн grid ── */}
+        {filtered.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((part) => {
               const inCart = cart.includes(part.id);
               return (
-                <div key={part.id}
-                  className={`bg-[#111111] border rounded-xl p-5 flex flex-col transition-all duration-200 ${
-                    inCart ? "border-[#E31B23]/40" : "border-white/5 hover:border-white/10"
-                  }`}>
-                  <div className="flex items-start justify-between mb-3">
+                <div
+                  key={part.id}
+                  className={`group bg-[#0f0f0f] border rounded-2xl p-5 flex flex-col transition-all duration-200 ${
+                    inCart
+                      ? "border-[#E31B23]/30 shadow-lg shadow-[#E31B23]/5"
+                      : "border-white/[0.06] hover:border-white/12"
+                  }`}
+                >
+                  {/* Badge row */}
+                  <div className="flex items-start justify-between mb-4">
                     <div>
-                      {part.badge && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeStyle[part.badge]}`}>
+                      {part.badge ? (
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wide ${badgeStyle[part.badge]}`}>
                           {part.badge}
                         </span>
+                      ) : (
+                        <span />
                       )}
                     </div>
                     {!part.inStock && (
-                      <span className="text-xs text-white/20 bg-white/5 px-2 py-0.5 rounded-full">Дууссан</span>
+                      <span className="text-[10px] text-white/20 bg-white/[0.04] border border-white/[0.06] px-2.5 py-1 rounded-full font-medium">
+                        Дууссан
+                      </span>
+                    )}
+                    {inCart && (
+                      <div className="w-5 h-5 rounded-full bg-[#E31B23] flex items-center justify-center ml-auto">
+                        <span className="text-white text-[10px] font-black">✓</span>
+                      </div>
                     )}
                   </div>
+
+                  {/* Info */}
                   <div className="flex-1">
-                    <p className="text-white font-medium leading-snug">{part.name}</p>
-                    <p className="text-white/40 text-sm mt-0.5">{part.brand}</p>
-                    <p className="text-white/20 text-xs mt-2">Тохирох: {part.compatibility.join(", ")}</p>
+                    <p className="text-white font-semibold leading-snug text-[15px]">{part.name}</p>
+                    <p className="text-white/30 text-sm mt-1">{part.brand}</p>
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {part.compatibility.map((c) => (
+                        <span key={c} className="text-[10px] text-white/20 bg-white/[0.04] px-2 py-0.5 rounded-md">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-                    <p className="text-white font-black text-lg">{part.price}</p>
-                    <button onClick={() => addToCart(part.id)} disabled={!part.inStock}
-                      className={`px-4 py-2 text-sm rounded-lg transition-all font-medium ${
-                        !part.inStock ? "bg-white/5 text-white/20 cursor-not-allowed"
-                        : inCart ? "bg-[#E31B23]/20 text-[#E31B23] border border-[#E31B23]/30"
-                        : "bg-[#E31B23] text-white hover:bg-[#c41620]"
-                      }`}>
+
+                  {/* Price + CTA */}
+                  <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.05]">
+                    <div>
+                      <p className="text-white font-black text-xl">{part.price}</p>
+                    </div>
+                    <button
+                      onClick={() => addToCart(part.id)}
+                      disabled={!part.inStock}
+                      className={`px-4 py-2 text-xs font-bold rounded-xl transition-all duration-200 ${
+                        !part.inStock
+                          ? "bg-white/[0.03] text-white/15 cursor-not-allowed"
+                          : inCart
+                          ? "bg-[#E31B23]/15 text-[#E31B23] border border-[#E31B23]/25 hover:bg-[#E31B23]/20"
+                          : "bg-[#E31B23] text-white hover:bg-[#c41620] shadow-md shadow-[#E31B23]/20"
+                      }`}
+                    >
                       {!part.inStock ? "Байхгүй" : inCart ? "✓ Нэмэгдсэн" : "Сагсанд нэмэх"}
                     </button>
                   </div>
@@ -544,45 +616,18 @@ export default function PartsShopPage() {
               );
             })}
           </div>
-
-          {filtered.length === 0 && (
-            <div className="text-center py-16">
-              <p className="text-white/20 text-sm">"{search}" гэсэн сэлбэг олдсонгүй</p>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="w-12 h-12 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+              <Search size={20} className="text-white/15" />
             </div>
-          )}
-        </>
-      ) : (
-        <div className="bg-[#111111] border border-white/5 rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/5">
-                <th className="text-left px-5 py-3 text-white/30 text-xs uppercase tracking-widest font-medium">Захиалга</th>
-                <th className="text-left px-5 py-3 text-white/30 text-xs uppercase tracking-widest font-medium">Бараа</th>
-                <th className="text-left px-5 py-3 text-white/30 text-xs uppercase tracking-widest font-medium">Огноо</th>
-                <th className="text-left px-5 py-3 text-white/30 text-xs uppercase tracking-widest font-medium">Төлөв</th>
-                <th className="text-right px-5 py-3 text-white/30 text-xs uppercase tracking-widest font-medium">Дүн</th>
-              </tr>
-            </thead>
-            <tbody>
-              {myOrders.map((order, i) => (
-                <tr key={order.id} className={`${i !== myOrders.length - 1 ? "border-b border-white/5" : ""} hover:bg-white/[0.02] transition-colors`}>
-                  <td className="px-5 py-4 text-white/40 text-sm font-mono">{order.id}</td>
-                  <td className="px-5 py-4 text-white text-sm">{order.item}</td>
-                  <td className="px-5 py-4 text-white/40 text-sm">{order.date}</td>
-                  <td className="px-5 py-4">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                      order.status === "Хүргэгдсэн" ? "bg-green-400/10 text-green-400" : "bg-blue-400/10 text-blue-400"
-                    }`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-white text-sm font-medium text-right">{order.total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            <p className="text-white/20 text-sm">"{search}" гэсэн сэлбэг олдсонгүй</p>
+            <button onClick={() => setSearch("")} className="text-[#E31B23] text-xs hover:underline">
+              Хайлт цэвэрлэх
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
