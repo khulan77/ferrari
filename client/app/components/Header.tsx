@@ -32,15 +32,23 @@ export default function Header() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center gap-8">
-
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 flex-shrink-0 group"
+          >
             <div className="w-9 h-9 bg-[#F97316] rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:shadow-orange-500/50 transition-shadow">
-              <span className="text-black font-black text-sm tracking-tighter">P</span>
+              <span className="text-black font-black text-sm tracking-tighter">
+                P
+              </span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-white font-black text-lg tracking-tighter">PRECISION</span>
-              <span className="text-[#F97316] font-black text-lg tracking-tighter">MOTO</span>
+              <span className="text-white font-black text-lg tracking-tighter">
+                PRECISION
+              </span>
+              <span className="text-[#F97316] font-black text-lg tracking-tighter">
+                MOTO
+              </span>
             </div>
           </Link>
 
@@ -61,9 +69,14 @@ export default function Header() {
           {/* Right actions */}
           <div className="flex items-center gap-2 ml-auto">
             {/* Search */}
-            <div className={`hidden md:flex items-center transition-all duration-300 ${searchOpen ? "w-56" : "w-40"}`}>
+            <div
+              className={`hidden md:flex items-center transition-all duration-300 ${searchOpen ? "w-56" : "w-40"}`}
+            >
               <div className="relative w-full">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                <Search
+                  size={13}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+                />
                 <input
                   onFocus={() => setSearchOpen(true)}
                   onBlur={() => setSearchOpen(false)}
@@ -92,15 +105,14 @@ export default function Header() {
 
             {/* Login */}
             <Link
-              href="/login"
+              href="/user"
               className="hidden md:block px-4 py-2 bg-white text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-[#F97316] transition-colors duration-200"
             >
               Нэвтрэх
             </Link>
 
-            {/* Mobile menu */}
             <button
-              onClick={() => setMenuOpen(o => !o)}
+              onClick={() => setMenuOpen((o) => !o)}
               className="md:hidden w-9 h-9 flex items-center justify-center text-white/70 hover:text-white transition-colors"
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
@@ -109,7 +121,6 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile menu */}
       {menuOpen && (
         <div className="fixed inset-0 z-40 bg-[#080808]/98 backdrop-blur-xl flex flex-col pt-24 px-6">
           <nav className="flex flex-col gap-1">
@@ -125,7 +136,10 @@ export default function Header() {
             ))}
           </nav>
           <div className="mt-8 flex flex-col gap-3">
-            <Link href="/login" className="w-full py-3.5 bg-[#F97316] text-black font-black uppercase tracking-widest text-sm rounded-xl text-center">
+            <Link
+              href="/user"
+              className="w-full py-3.5 bg-[#F97316] text-black font-black uppercase tracking-widest text-sm rounded-xl text-center"
+            >
               Нэвтрэх
             </Link>
           </div>
